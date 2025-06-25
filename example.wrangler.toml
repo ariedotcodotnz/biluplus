@@ -8,16 +8,16 @@ compatibility_flags = [ "nodejs_compat" ]
 
 [[kv_namespaces]]
 binding = "KV"
-id = ""
+id = "2de8a93c7dba459299b6317edea53dbc"
 
 # [[r2_buckets]]
 # binding = "MY_BUCKET"
 # bucket_name = "my-bucket"
 
-# [[d1_databases]]
-# binding = "DB" # i.e. available in your Worker on env.DB
-# atabase_name = "bilu"
-# database_id = "05eb0c8f-ebeb-4030-9136-43d22d5be18d"
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+atabase_name = "bilu"
+database_id = "2df96960-e625-494b-a94b-18e6e032c3cb"
 
 # [ai]
 # binding = "AI"
