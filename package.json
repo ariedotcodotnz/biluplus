@@ -1,12 +1,14 @@
 {
-  "name": "bilu",
-  "version": "0.0.1",
-  "description": "A cloudflare worker comment system",
+  "name": "bilu-enterprise",
+  "version": "2.0.0",
+  "description": "Enterprise-grade comment system built on Cloudflare Workers",
   "license": "MIT",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:migrate": "wrangler d1 migrations apply bilu-enterprise",
+    "db:migrate:local": "wrangler d1 migrations apply bilu-enterprise --local"
   },
   "dependencies": {
     "hono": "^4.6.6",
@@ -15,7 +17,11 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241022.0",
     "prettier": "3.3.3",
+    "typescript": "^5.3.0",
     "wrangler": "^3.83.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "packageManager": "yarn@4.5.1"
 }
