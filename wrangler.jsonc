@@ -1,6 +1,6 @@
 {
   "name": "biluplus",
-  "main": "src/index-simple.ts",
+  "main": "src/index-v2.ts",
   "compatibility_date": "2024-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
