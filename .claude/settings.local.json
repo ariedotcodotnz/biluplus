@@ -15,7 +15,8 @@
       "Bash(. \"$NVM_DIR/nvm.sh\")",
       "Bash(nvm install:*)",
       "Bash(nvm use:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(bun install:*)"
     ],
     "deny": []
   }

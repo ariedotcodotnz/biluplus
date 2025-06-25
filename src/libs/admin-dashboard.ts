@@ -828,4 +828,4 @@ export const adminDashboardHTML = `
     </script>
 </body>
 </html>
-`;`;
+`;
