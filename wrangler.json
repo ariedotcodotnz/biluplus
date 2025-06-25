@@ -1,6 +1,7 @@
 {
   "name": "biluplus",
   "main": "src/index-v2.ts",
+  "account_id": "f8622bda39b193df337532b54aff523b",
   "compatibility_date": "2024-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
