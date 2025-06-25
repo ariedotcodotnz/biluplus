@@ -99,20 +99,30 @@ export class CommentService {
       SELECT * FROM sites WHERE domain = ?
     `).bind(domain).first<Site>();
 
-    if (!site && ownerId) {
-      const result = await this.db.prepare(`
-        INSERT INTO sites (domain, name, owner_id)
-        VALUES (?, ?, ?)
-        RETURNING *
-      `).bind(domain, domain, ownerId).first<Site>();
+    if (!site) {
+      // Use provided ownerId or default to admin user (ID 1) for anonymous sites
+      const defaultOwnerId = ownerId || 1;
       
-      if (result) {
-        site = result;
+      try {
+        const result = await this.db.prepare(`
+          INSERT INTO sites (domain, name, owner_id)
+          VALUES (?, ?, ?)
+          RETURNING *
+        `).bind(domain, domain, defaultOwnerId).first<Site>();
+        
+        if (result) {
+          site = result;
+        }
+      } catch (error) {
+        // If insert fails, try to get the site again (race condition)
+        site = await this.db.prepare(`
+          SELECT * FROM sites WHERE domain = ?
+        `).bind(domain).first<Site>();
       }
     }
 
     if (!site) {
-      throw new Error('Site not found and cannot create without owner');
+      throw new Error('Failed to create or find site');
     }
 
     return site;
