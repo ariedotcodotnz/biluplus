@@ -16,7 +16,7 @@ id = "2de8a93c7dba459299b6317edea53dbc"
 
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
-atabase_name = "bilu"
+database_name = "bilu"
 database_id = "2df96960-e625-494b-a94b-18e6e032c3cb"
 
 # [ai]
