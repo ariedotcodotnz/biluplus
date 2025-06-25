@@ -469,6 +469,28 @@ app.put('/admin/users/:id', requireAdmin, async (c) => {
 
 // === SITE MANAGEMENT ===
 
+app.get('/admin/comments', requireAdmin, async (c) => {
+  const { DB } = c.env;
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+  
+  try {
+    const comments = await DB.prepare(`
+      SELECT c.*, u.display_name as user_display_name, u.username, s.domain as site_domain
+      FROM comments c
+      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN sites s ON c.site_id = s.id
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `).bind(limit, offset).all<any>();
+    
+    return c.json({ comments: comments.results });
+  } catch (error) {
+    console.error('Get comments error:', error);
+    return c.json({ error: 'Failed to fetch comments' }, 500);
+  }
+});
+
 app.get('/admin/sites', requireAdmin, async (c) => {
   const { DB } = c.env;
   

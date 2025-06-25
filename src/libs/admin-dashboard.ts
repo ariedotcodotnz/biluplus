@@ -426,7 +426,45 @@ export const adminDashboardHTML = `
                         <h3 class="section-title">System Settings</h3>
                     </div>
                     <div style="padding: 24px;">
-                        <p>Settings panel - Configure global options, API keys, and system preferences.</p>
+                        <div class="form-group">
+                            <label class="form-label">Site Name</label>
+                            <input type="text" class="form-control" value="Bilu Enterprise" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Admin Email</label>
+                            <input type="email" class="form-control" value="admin@yourdomain.com" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Default Moderation Mode</label>
+                            <select class="form-control">
+                                <option value="auto">Automatic</option>
+                                <option value="manual">Manual Review</option>
+                                <option value="off">Disabled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Allow Anonymous Comments</label>
+                            <select class="form-control">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Rate Limit (requests per minute)</label>
+                            <input type="number" class="form-control" value="60" readonly>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary">Save Settings</button>
+                            <button class="btn btn-danger" onclick="clearCache()" style="margin-left: 10px;">Clear Cache</button>
+                        </div>
+                        <hr style="margin: 30px 0;">
+                        <h4>System Information</h4>
+                        <table class="table">
+                            <tr><td><strong>Version</strong></td><td>2.0.0</td></tr>
+                            <tr><td><strong>Database</strong></td><td>Cloudflare D1</td></tr>
+                            <tr><td><strong>Cache</strong></td><td>Cloudflare KV</td></tr>
+                            <tr><td><strong>Analytics</strong></td><td>Enabled</td></tr>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -632,6 +670,91 @@ export const adminDashboardHTML = `
             }
         }
         
+        async function loadComments() {
+            const token = getToken();
+            const headers = { 'Authorization': 'Bearer ' + token };
+            
+            try {
+                const response = await fetch(apiBase + '/admin/comments', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    renderComments(data.comments);
+                }
+            } catch (error) {
+                console.error('Failed to load comments:', error);
+            }
+        }
+        
+        function renderComments(comments) {
+            if (comments.length === 0) {
+                document.getElementById('comments-list').innerHTML = 
+                    '<p style="padding: 20px; color: #666;">No comments found</p>';
+                return;
+            }
+            
+            const html = \`
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Author</th>
+                            <th>Comment</th>
+                            <th>Site</th>
+                            <th>Page</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        \${comments.map(comment => \`
+                            <tr>
+                                <td>\${comment.user_display_name || comment.author_name || 'Anonymous'}</td>
+                                <td class="comment-content">\${comment.content}</td>
+                                <td>\${comment.site_domain || 'N/A'}</td>
+                                <td>\${comment.page_url}</td>
+                                <td><span class="badge badge-\${comment.status}">\${comment.status}</span></td>
+                                <td>\${new Date(comment.created_at).toLocaleDateString()}</td>
+                                <td>
+                                    \${comment.status === 'pending' ? 
+                                        \`<button class="btn btn-primary" onclick="openModerationModal(\${comment.id}, '\${comment.content.replace(/'/g, "\\'")}')">Review</button>\` :
+                                        \`<button class="btn btn-danger" onclick="deleteComment(\${comment.id})">Delete</button>\`
+                                    }
+                                </td>
+                            </tr>
+                        \`).join('')}
+                    </tbody>
+                </table>
+            \`;
+            document.getElementById('comments-list').innerHTML = html;
+        }
+        
+        async function deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
+            
+            const token = getToken();
+            try {
+                const response = await fetch(apiBase + \`/admin/comments/\${commentId}/moderate\`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'delete', reason: 'Deleted by admin' })
+                });
+                
+                if (response.ok) {
+                    loadComments(); // Reload comments
+                    loadDashboard(); // Update stats
+                    alert('Comment deleted successfully');
+                } else {
+                    alert('Failed to delete comment');
+                }
+            } catch (error) {
+                console.error('Delete comment failed:', error);
+                alert('Delete failed');
+            }
+        }
+        
         function renderUsers(users) {
             const html = \`
                 <table class="table">
@@ -823,6 +946,12 @@ export const adminDashboardHTML = `
             const modal = document.getElementById('moderate-modal');
             if (event.target === modal) {
                 closeModal();
+            }
+        }
+        
+        function clearCache() {
+            if (confirm('Are you sure you want to clear the cache? This may temporarily slow down the system.')) {
+                alert('Cache clearing functionality would be implemented here');
             }
         }
     </script>
