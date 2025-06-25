@@ -506,6 +506,39 @@ app.get('/health', async (c) => {
   });
 });
 
+// === ADMIN SETUP (TEMPORARY) ===
+app.get('/setup-admin', async (c) => {
+  const { auth } = getServices(c.env);
+  
+  try {
+    // Try to create admin user
+    const result = await auth.register({
+      email: 'admin@yourdomain.com',
+      password: 'SecureAdminPassword123',
+      username: 'admin',
+      display_name: 'Admin User'
+    });
+    
+    if (!result) {
+      return c.json({ error: 'Failed to create admin user - might already exist' }, 400);
+    }
+    
+    // Update role to admin
+    await c.env.DB.prepare(`
+      UPDATE users SET role = 'admin' WHERE email = 'admin@yourdomain.com'
+    `).run();
+    
+    return c.json({ 
+      message: 'Admin user created successfully',
+      email: 'admin@yourdomain.com',
+      password: 'SecureAdminPassword123',
+      note: 'You can now login at /admin'
+    });
+  } catch (error) {
+    return c.json({ error: 'Setup failed: ' + error.message }, 500);
+  }
+});
+
 // === ADMIN DASHBOARD ===
 app.get('/admin', requireAdmin, async (c) => {
   const { adminDashboardHTML } = await import('./libs/admin-dashboard');

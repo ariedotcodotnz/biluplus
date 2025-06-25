@@ -16,7 +16,8 @@
       "Bash(nvm install:*)",
       "Bash(nvm use:*)",
       "Bash(true)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
