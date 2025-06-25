@@ -506,33 +506,104 @@ app.get('/health', async (c) => {
   });
 });
 
-// === ADMIN SETUP (TEMPORARY) ===
-app.get('/setup-admin', async (c) => {
-  const { auth } = getServices(c.env);
+// === DATABASE SETUP (TEMPORARY) ===
+app.get('/setup-database', async (c) => {
+  const { DB } = c.env;
   
   try {
-    // Try to create admin user
-    const result = await auth.register({
-      email: 'admin@yourdomain.com',
-      password: 'SecureAdminPassword123',
-      username: 'admin',
-      display_name: 'Admin User'
-    });
+    // Create all required tables
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS sites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        domain TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL,
+        settings TEXT,
+        moderation_mode TEXT DEFAULT 'auto',
+        require_approval BOOLEAN DEFAULT FALSE,
+        allow_anonymous BOOLEAN DEFAULT TRUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_id) REFERENCES users(id)
+      )
+    `).run();
     
-    if (!result) {
-      return c.json({ error: 'Failed to create admin user - might already exist' }, 400);
-    }
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        site_id INTEGER NOT NULL,
+        page_url TEXT NOT NULL,
+        parent_id INTEGER,
+        user_id INTEGER,
+        author_name TEXT,
+        author_email TEXT,
+        content TEXT NOT NULL,
+        content_html TEXT,
+        status TEXT NOT NULL DEFAULT 'published',
+        ip_address TEXT,
+        user_agent TEXT,
+        vote_score INTEGER DEFAULT 0,
+        reply_count INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (site_id) REFERENCES sites(id),
+        FOREIGN KEY (parent_id) REFERENCES comments(id),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `).run();
     
-    // Update role to admin
-    await c.env.DB.prepare(`
-      UPDATE users SET role = 'admin' WHERE email = 'admin@yourdomain.com'
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS votes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        comment_id INTEGER NOT NULL,
+        user_id INTEGER,
+        ip_address TEXT,
+        vote_type TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (comment_id) REFERENCES comments(id),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `).run();
+    
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS moderation_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        comment_id INTEGER NOT NULL,
+        moderator_id INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        reason TEXT,
+        previous_status TEXT,
+        new_status TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (comment_id) REFERENCES comments(id),
+        FOREIGN KEY (moderator_id) REFERENCES users(id)
+      )
+    `).run();
+    
+    // Create some sample data
+    await DB.prepare(`
+      INSERT OR IGNORE INTO sites (domain, name, owner_id) 
+      VALUES ('example.com', 'Example Site', 1)
+    `).run();
+    
+    await DB.prepare(`
+      INSERT OR IGNORE INTO sites (domain, name, owner_id) 
+      VALUES ('test.com', 'Test Site', 1)
+    `).run();
+    
+    await DB.prepare(`
+      INSERT OR IGNORE INTO comments (site_id, page_url, author_name, content, status) 
+      VALUES (1, '/blog/post-1', 'John Doe', 'This is a sample comment', 'published')
+    `).run();
+    
+    await DB.prepare(`
+      INSERT OR IGNORE INTO comments (site_id, page_url, author_name, content, status) 
+      VALUES (1, '/blog/post-2', 'Jane Smith', 'Another sample comment', 'pending')
     `).run();
     
     return c.json({ 
-      message: 'Admin user created successfully',
-      email: 'admin@yourdomain.com',
-      password: 'SecureAdminPassword123',
-      note: 'You can now login at /admin'
+      message: 'Database setup completed successfully',
+      note: 'All tables created and sample data inserted'
     });
   } catch (error) {
     return c.json({ error: 'Setup failed: ' + error.message }, 500);
